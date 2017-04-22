@@ -30,11 +30,21 @@ main PROC
 
 ;符号标志的例子
 	mov cx,1
-	sub cx,1
+	sub cx,1							;SF = 1
 	mov ax,0FFFFh
-	inc ax
+	inc ax								;SF = 1
 
 ;进位标志的例子
 	mov al,0FFh
-	add al,1
+	add al,1							;CF = 1, AL = 00
+
+;溢出标志的例子
+	mov a1,+127
+	add a1,1							;OF = 1
+	mov al,-128
+	sub al,1							;OF = 1
+	
+	exit
+main ENDP
+END main
 	
