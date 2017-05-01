@@ -35,4 +35,45 @@ InputTheString PROC
 	mov edx,OFFSET sPrompt					;显示提示信息
 	call WriteString
 	mov ecx,BUFMAX							;最多显示数目
-	
+	mov edx,OFFSET buffer					;指向缓存区
+	call ReadString							;输入字符串
+	mov bufSize,eax							;保存其长度
+	call Crlf
+	popad
+	ret
+InputTheString ENDP
+
+;-----------------------------------------------------
+DisplayMessage PROC
+;Displays the encrypted or decrypted message.
+;Receives: EDX points to the message
+;Returns: nothing
+;-----------------------------------------------------
+	pushad
+	call WriteString
+	mov edx,OFFSET buffer					;显示缓存区内容
+	call Crlf
+	call Crlf
+	popad
+	ret
+DisplayMessage ENDP
+
+;-----------------------------------------------------
+TranslateBuffer PROC
+;
+;Translates the string by exclusive-ORing each
+;byte with the encryption key byte.
+;Receives: nothing
+;Returns: nothing
+;-----------------------------------------------------
+	pushad
+	mov ecx,bufSize							;循环计数器
+	mov esi,0								;缓存区的索引0
+L1:
+	xor buffer[esi],KEY						;转换一个字节
+	inc esi									;指向下一个字节
+	loop L1
+	popad
+	ret
+TranslateBuffer ENDP
+END main
