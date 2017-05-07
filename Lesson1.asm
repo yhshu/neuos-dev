@@ -14,7 +14,7 @@ _start:
     xor %bh,%bh         #取非
     int $0x10
 
-    mov     $20,%cx     $设定输出长度 cx = 20
+    mov $20,%cx			#设定输出长度 cx = 20
     mov     $0x0007,%bx #page 0, attribute 7 (normal) 设置必要的属性
     #lea    msg1,%bp
     mov     $msg1,%bp
