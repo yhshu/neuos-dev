@@ -17,8 +17,8 @@ _start:
 
     mov     $20,%cx     #设定输出长度 cx = 20
     mov     $0x0007,%bx #page 0, attribute 7 (normal) 设置必要的属性
-    #lea    msg1,%bp
-    mov     $msg1,%bp
+    #lea    msg1,%bp    #lea是取地址指令，bp是指针寄存器
+    mov     $msg1,%bp   
     mov     $0x1301,%ax #写字符，移动光标 ax = 0x1301
     int     $0x10       #使用这个中断0x10时，输出所得的，因而要设置好 ES 和 BP
 
