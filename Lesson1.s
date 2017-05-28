@@ -10,7 +10,8 @@
 _start:
     mov $BOOTSEG,%ax    #ax = BOOTSEG
     mov %ax,%es         #设置ES寄存器，为输出字符串作准备
-    mov $0x03,%ah       #在输出信息前读取光标位置储存在DX里，DH为行，DL为列
+    mov $0x03,%ah       #int 10，ah = 03H 执行的功能是获取光标位置和形状
+                        #在输出信息前读取光标位置储存在DX里，中断返回的DH为行，DL为列
     xor %bh,%bh         
     int $0x10
 
