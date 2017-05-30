@@ -29,12 +29,12 @@ ljmp $BOOTSEG, $_start  # 修改cs寄存器为BOOTSEG, 并跳转到_start处执�
 _start:
     mov $BOOTSEG,%ax    
     mov %ax,%es         # 设置ES寄存器，为后续输出字符串做准备
-    mov $0x03,%ah
-  	xor	%bh, %bh
+    mov $0x03,%ah       # int 10 03ah 中断
+  	xor	%bh, %bh        # mov %bh,$0
 	int	$0x10
 
     mov $20,%cx         # 设定输出长度
-    mov $0x0007,%bx
+    mov $0x0007,%bx     # 设定属性
     mov $msg1,%bp
     mov	$0x1301, %ax    # 输出字符串，移动光标
     int $0x10
@@ -43,6 +43,30 @@ load_demo:
     # 将软盘的内容加载的内存中，并跳转到相应地址执行代码
     mov $0x0000,%dx     # 选择磁盘号0，磁头号0进行读取
     mov $0x0002,%cx     # 从2号扇区，0轨道开始读取；扇区是从1号开始标号的
-    mov $DEMOSEG,%ax    # ES:BX 指向装载目的地址
+    mov $DEMOSEG,%ax    # ES:BX 是缓存地址指针
     mov %ax,%es
-    mov 
+    mov $0x0200,%bx
+    mov $02,%ah         # int 13 02ah 中断，读取磁盘扇区
+    mov $4,%al          # 读取的扇区数
+    jnc demo_load_ok    # 无异常，加载成功
+    jmp load_demo       # 一直重试，直至加载成功
+
+demo_load_ok:
+    mov $DEMOSEG, %ax
+    mov %ax,%ds
+
+    ljmp $0x1020,$0     # 跳至demo program所在处
+
+sectors:
+    .word 0
+
+msg1:
+    .byte 13,10
+    .ascii "This program is working."
+    .byte 13,10,13,10
+
+    .=0x1fe
+    # 等价于 .org 510
+
+boot_flag:
+    .word 0xAA55
