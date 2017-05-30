@@ -27,8 +27,8 @@ go:
     mov ax,#0x1301 # 打印字符串并移动光标到字符串结尾处。
     int 0x10       # BIOS中断调用0x10，功能0x13，子功能01
 
-forever_loop:
-    jmp forever_loop
+loop_forever: 
+    jmp loop_forever
 
 msg1:
     .ascii "Loading system..."
