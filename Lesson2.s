@@ -29,7 +29,7 @@ ljmp $BOOTSEG, $_start  # 修改cs寄存器为BOOTSEG, 并跳转到_start处执�
 _start:
     mov $BOOTSEG,%ax    
     mov %ax,%es         # 设置ES寄存器，为后续输出字符串做准备
-    mov $0x03,%ah       # int 10 03ah 中断
+    mov $0x03,%ah       # int 10， ah = 03 中断
   	xor	%bh, %bh        # mov %bh,$0
 	int	$0x10
 
