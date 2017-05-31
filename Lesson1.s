@@ -16,7 +16,7 @@ _start:
     int $0x10
 
     mov     $20,%cx     #设定输出长度 cx = 20
-    mov     $0x0007,%bx #bx是页码；page 0, attribute 7 (normal) 设置必要的属性
+    mov     $0x0007,%bx #bx是显示页面；page 0, attribute 7 (normal) 设置必要的属性
     #lea    msg1,%bp    #lea是取地址指令，bp是指针寄存器
     mov     $msg1,%bp   
     mov     $0x1301,%ax #写字符，移动光标 ax = 0x1301
@@ -30,7 +30,7 @@ sectors:
 
 msg1:
     .byte 13,10         #13是回车，10是换行
-    .ascii "Hello world!"
+    .ascii "The program is working."
     .byte 13,10,13,10
 
     .=0x1fe             #对齐语法，等价于.org 510，表示在该处补0，即第一扇区的最后两字节
