@@ -85,7 +85,18 @@ print_msg:
     call kill_motor
 
     mov %cs:root_dev,%ax
-    
+    cmp $0,&ax
+    jne root_defined    # ZF=0时跳转
+    mov %cs:sectors+0,%bx  
+
+    je root_defined     # ZF=1时跳转
+    mov 
+
+undef_root:             # 若未找到root，一直循环
+    jmp undef_root
+
+root_defined:
+    mov %ax,
 
 sectors:
     .word 0
