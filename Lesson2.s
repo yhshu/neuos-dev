@@ -29,11 +29,11 @@ ljmp $BOOTSEG, $_start  # 修改cs寄存器为BOOTSEG, 并跳转到_start处执�
 _start:
     mov $BOOTSEG,%ax    
     mov %ax,%es         # 设置ES寄存器，为后续输出字符串做准备
-    mov $0x03,%ah       # int 10， ah = 03 中断
+    mov $0x03,%ah       # int 10 03ah 中断
   	xor	%bh, %bh        # mov %bh,$0
 	int	$0x10
 
-    mov $20,%cx         # 设定输出长度
+    mov $30,%cx         # 设定输出长度
     mov $0x0007,%bx     # 设定属性
     mov $msg1,%bp
     mov	$0x1301, %ax    # 输出字符串，移动光标
@@ -70,3 +70,4 @@ msg1:
 
 boot_flag:
     .word 0xAA55
+    
