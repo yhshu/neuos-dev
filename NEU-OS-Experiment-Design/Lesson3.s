@@ -16,6 +16,7 @@ begbss:
 .equ SETUPLEN,0x04      # Setup 程序占用的扇区数
 .equ BOOTSEG,0x07c0     # bootsector原始地址
 .equ INITSEG,0x9000     # bootsector被移至此地址
+
 .equ SETUPSEG,0x9020    # setup.s的代码会被移动到这里，是BootSector后一个扇区
 .equ SYSSEG,0x1000      # system 程序的装载地址
 .equ ROOTDEV,0x301      # 指定/dev/fda为系统镜像所在的设备
@@ -24,7 +25,7 @@ begbss:
 ljmp $BOOTSEG, $_start  # 修改cs寄存器为BOOTSEG, 并跳转到_start处执行代码
 
 _start:
-    mov $BOOTSEG,%ax    # 将启动扇区从0x07c0:0000处移动到0x9000:0000
+    mov $BOOTSEG,%ax    # 将启动扇区从0x07c0:0000(31kb)处移动到0x9000:0000(576kb)
     mov %ax,%ds         # 以下是rep mov的用法
     mov %INITSEG,%ax    # 源地址ds:si = 0x07co:0000
     mov %ax,%es         # 目的地址es:di = 0x9000:0000
@@ -72,7 +73,7 @@ print_msg:
     xor %bh,%bh         # bh = 0
     int $0x10
 
-    mov $20,%cx         # 设定输出长度
+    mov $30,%cx         # 设定输出长度
     mov $0x0007,%bx     
     mov $msg1,%bp
     mov $0x1301,%ax     # 输出字符串，移动光标
@@ -86,17 +87,53 @@ print_msg:
 
     mov %cs:root_dev,%ax
     cmp $0,&ax
-    jne root_defined    # ZF=0时跳转
+    jne root_defined    # ZF = 0时跳转，即ax不为0时
     mov %cs:sectors+0,%bx  
-
-    je root_defined     # ZF=1时跳转
-    mov 
+    mov $0x0208,%ax
+    # cmp指令执行减法运算但不保存结果，只根据结果设置相关的条件标志位（SF、ZF、CF、OF）
+    # cmp指令后往往跟着条件转移指令，实现根据比较的结果产生不同的程序分支的功能。
+    cmp $15,%bx         # Sector = 15, 1.2MB软驱
+    je root_defined     # ZF = 1时跳转
+    mov $0x021c,%ax
+    cmp $18,%bx         # Sector = 18, 1.44MB软驱
+    je root_defined
 
 undef_root:             # 若未找到root，一直循环
     jmp undef_root
 
 root_defined:
-    mov %ax,
+    mov %ax, %cs:root_dev+0
+
+# 装载全部完成，跳转到安装例程，位于0x9020:0000
+
+    ljmp $SETUPSEG, $0
+
+# 下面是read_it 和 kill_motor 两个子函数，
+# 用来快速读取软盘中的内容，以及关闭软驱电机
+
+# 首先定义一些变量，用于读取软盘信息使用
+sread: .word 1 + SETUPLEN   # 当前轨道读取的扇区数
+head:  .word 0              # 当前读头
+track: .word 0              # 当前轨道
+
+read_it: # 读取软驱
+    mov %es, %ax
+    test $0x0fff, %ax
+    # TEST指令按位进行逻辑与运算，与AND指令的区别是两个操作数不会被改变。
+die:
+    jne die                 # 如果ES不是在64KB(0x1000)边界上，就在此停止
+    xor %bx, %bx            # %bx = $0
+rp_read:
+    mov %es, %ax
+    cmp $ENDSEG, %ax
+    jb ok1_read             # $ENDSEG > %ES时跳转
+                            # 当进位标志CF = 1时，jb指令跳转
+    ret
+ok1_read:
+    mov %cs:sectors+0,%ax
+    sub sread, %ax
+    mov %ax, %cx # 计算尚未读取的扇区
+    shl
 
 sectors:
     .word 0
@@ -107,7 +144,9 @@ msg1:
     .byte 13,10,13,10
 
     .=0x1fc
-    # 等价于 .org 508
+    # 对齐语法，等价于.org 508；在该处补零，直到地址为 510 的第一扇区的最后两字节
+    # 然后在此填充好0xaa55魔术值，BIOS会识别硬盘中第一扇区以0xaa55结尾的为启动扇区
+    # 于是BIOS会装载代码并运行
 
 root_dev:
     .word ROOT_DEV
