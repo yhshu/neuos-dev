@@ -1,4 +1,10 @@
-# 将操作系统装载到正确的地址，设置GDT后切换到保护模式。
+# Lesson3：将操作系统装载到正确的地址，设置GDT后切换到保护模式。
+
+# 以下代码将操作系统完整地装载到内存中，代码分为三部分
+# 0x9000:0000 bootsect
+# 0x9000:0200 setup
+# 0x1000:0000 system
+
 .code16
 .equ SYSSIZE, 0x3000    # system size是要加载的系统模块的长度。
 # 0x3000是196kb，对于当前版本空间足够。
@@ -13,17 +19,20 @@ begdata:
 begbss:
 .text # 文本段
 
+# bootsect对内存的规划
 .equ SETUPLEN,0x04      # Setup 程序占用的扇区数
 .equ BOOTSEG,0x07c0     # bootsector原始地址
-.equ INITSEG,0x9000     # bootsector被移至此地址
+.equ INITSEG,0x9000     # bootsector将有的新地址
 
 .equ SETUPSEG,0x9020    # setup.s的代码会被移动到这里，是BootSector后一个扇区
 .equ SYSSEG,0x1000      # system 程序的装载地址
 .equ ROOTDEV,0x301      # 指定/dev/fda为系统镜像所在的设备
-.equ ENDSEG,SYSSEG+SYSSIZE
+.equ ENDSEG,SYSSEG+SYSSIZE # system末尾扇区
 
 ljmp $BOOTSEG, $_start  # 修改cs寄存器为BOOTSEG, 并跳转到_start处执行代码
 
+# 复制bootsect：
+# # 初始加载到0x07c00是OS与BIOS的约定。移至0x90000是根据OS的需要安排内存
 _start:
     mov $BOOTSEG,%ax    # 将启动扇区从0x07c0:0000(31kb)处移动到0x9000:0000(576kb)
     mov %ax,%ds         # 以下是rep mov的用法
@@ -34,21 +43,33 @@ _start:
     xor %di,%di
     rep movsw
 
-    ljmp $INITSEG,$go   # 长跳转，切换CS:IP
-go:
-    mov %cs,%ax         # 对DS，ES，SS寄存器进行初始化
+# 扇区复制后跳转到新扇区
+    ljmp $INITSEG,$go   # 长跳转，切换到CS:IP
+go: 
+# 代码复制完成后，0x07c00和0x90000位置处有两段完全相同的代码。复制代码本身
+# 是要靠指令执行的，执行指令的过程就是CS和IP不断变化的过程。执行到ljmp $INITSEG,$go
+# 之前，代码的作用就是复制代码自身；执行ljmp $INITSEG,$go之后，程序就转到执行0x90000
+# 这边的代码。跳转到新位置后，应当执行下面的代码而不是从本程序开始死循环。
+# ljmp $INITSEG,$go和go: mov %cs.%ax巧妙地实现了到新位置后接着原来的执行序继续执行的目的。
+
+# bootsect复制到新地址后，代码整体位置发生变化，对DS，ES，SS寄存器进行初始化
+    mov %cs,%ax         # 通过ax将ds、es、ss设置成与cs相同的位置
     mov %ax,%ds
     mov %ax,%es
     mov %ax,%ss
-    mov $0xFF00,%sp     # 设置栈
+    mov $0xFF00,%sp     
+    # ss和sp联合使用构成了栈数据在内存中的位置值
+    # 为后面程序的栈操作打下了基础
 
+# 将软盘中的setup程序加载到内存中，并且跳转到相应地址执行代码
 load_setup:
-    # 将软盘内容加载到内存中，并且跳转到相应地址执行代码
-    mov $0x0000,%dx     # 选择磁盘号0，磁头号0进行读取
+    # 使用BIOS提供的int0x13中断向量所指向的中断服务程序（磁盘服务程序）
+    # 以下是调用中断前传参
+    mov $0x0000,%dx     # 选择磁盘号0，磁头号0读取
     mov $0x0002,%cx     # 从2号扇区，0轨道开始读取；扇区是从1开始编号的
     mov $INITSEG,%ax    # ES:BX 指向装载目的地址
     mov %ax,%es
-    mov $0x0200,%bx
+    mov $0x0200,%bx     #
     mov $02,%ah         # int 13,ah = 2，读取磁盘扇区
     mov $4,%al          # 读取的扇区数
     int $0x13           # 调用BIOS中断
@@ -148,7 +169,7 @@ msg1:
     # 然后在此填充好0xaa55魔术值，BIOS会识别硬盘中第一扇区以0xaa55结尾的为启动扇区
     # 于是BIOS会装载代码并运行
 
-root_dev:
+root_dev:# 根文件系统设备号
     .word ROOT_DEV
 
 boot_flag:
