@@ -92,6 +92,18 @@ demo_load_ok:
     mov $INITSEG, %ax
     mov %ax, %es
 
+print_msg:
+# 显示一段信息
+    mov $0x03,%ah       # 输出信息之前读取光标位置，中断返回使DH为行，DL为列 
+    xor %bh,%bh         # bh = 0
+    int $0x10
+
+    mov $30,%cx         # 设定输出长度
+    mov $0x0007,%bx     
+    mov $msg1,%bp
+    mov $0x1301,%ax     # 输出字符串，移动光标
+    int $0x10           # 输出的内容是从ES:BP取得的
+
 # 第三部分：将整个系统镜像装载到0x1000:0000开始的内存中
     mov $SYSSEG, %ax
     mov %ax, %es        # es作为参数
@@ -112,7 +124,7 @@ demo_load_ok:
     cmp $18, %bx         # Sector = 18, 1.44MB软驱
     je root_defined
 
-undef_root:              # 若未找到根设备，一直循环
+undef_root:              # 若未找到根设备，死循环（死机）
     jmp undef_root
 
 root_defined:
@@ -138,6 +150,8 @@ die:
     xor %bx, %bx            # %bx = $0
 
 rp_read:
+    # 判断是否已经读入全部数据。比较当前所读段是否就是系统数据末端所处的段(ENDSEG)
+    # 如果不是就跳转到下面ok1_read标号处继续读数据。否则退出子程序返回。
     mov %es, %ax
     cmp $ENDSEG, %ax        # 判断是否已加载所有数据
     jb ok1_read             # $ENDSEG > %ES时跳转
@@ -170,24 +184,104 @@ ok2_read:
     add ax, sread   # 加上当前磁道上已经读取的扇区数
     
     cmp %cs:sectors+0, %ax  # 判断当前磁道是否还有扇区未读
-    jnc ok3_read            # 还有扇区
+    jnc ok3_read            # 还有扇区未读，跳转到ok3_read
+    
+    # 若该磁道的当前磁头面所有扇区已经读取，则读该磁道的下一磁头面（1号磁头）上的数据
+    # 如果已经完成，则读下一磁道。
+    mov $1, %ax
+    jne ok4_read            # 如果是0磁头，再读1磁头面上的扇区数据
+    inc track               # 否则读下一磁道
 
+ok4_read:
+    mov %ax, head           # 保存当前磁头号
+    xor ax, ax              # 清零当前磁道已读扇区数
+
+ok3_read:
+    # 如果当前磁道上仍有未读扇区，则首先保存当前磁道已读扇区数，
+    # 然后调整存放数据处的开始位置。若小于64KB边界值，则跳转到
+    # rp_read处，继续读数据。
+    mov sread, ax           # 保存当前磁道已读扇区数
+    shl $9, %cx             # 上次已读扇区数 * 512字节
+    add %cx, %bx            # 调整当前段内数据开始位置
+    jnc rp_read
+    # 否则说明已经读取64KB数据，此时调整当前段，为读下一段数据做准备
+    mov %es, %ax
+    add $0x1000, %ax        # 将段基址调整为指向下一个64KB内存开始处
+    mov %ax, %es
+    xor %bx, %bx            # 清零段内数据开始偏移值
+    jmp rp_read
+
+# read_track子程序：
+# 读当前磁道上指定开始扇区和需读扇区的数据到es:bx开始处。
+# 中断 0x13 service 2
+# AH = 02
+# AL = 需要读取的扇区数量	(1-128 dec.)
+# CH = 磁道号  (0-1023)
+# CL = 扇区号  (1-17)
+# DH = 磁头号  (0-15)
+# DL = 驱动器号 (0 = 软盘1/盘符A:, 1 = 软盘2, 80h = 硬盘0, 81h = 硬盘1)
+# ES:BX = 缓存区位置
+read_track:                 # 读取磁盘的核心程序
+    push %ax
+	push %bx
+	push %cx
+	push %dx
+	mov track, %dx		    # 取当前磁道号
+	mov sread, %cx          # 取当前磁道上已读扇区数
+	inc %cx                 # cl = 开始读扇区
+	mov %dl, %ch            # ch = 当前磁道号
+	mov head, %dx           # 取当前磁头号
+	mov %dl, %dh            # dh = 磁头号
+	mov $0, %dl             # dl = 驱动器号，0即当前A驱动器
+	and $0x0100, %dx        # 按位逻辑与操作；磁头号不大于1
+	mov $2, %ah             # 中断功能号ah = 2
+	int $0x13               
+	jc bad_rt               # 如果出错，跳转bad_rt
+	pop %dx
+	pop %cx
+	pop %bx
+	pop %ax
+	ret
+
+# 读磁盘操作出错，则执行驱动器复位（磁盘中断功能号0），再跳转到read_track重试
+bad_rt:
+	mov $0, %ax
+	mov $0, %dx
+	int $0x13
+	pop %dx
+	pop %cx
+	pop %bx
+	pop %ax
+	jmp read_track
+
+kill_motor:
+    # 这个子程序用于关闭软驱的马达，这样进入内核后就能知道它所处的状态
+    # 0x3f2是软盘控制器的一个端口，被称为数字输出寄存器（DOR）端口。
+	push %dx
+	mov $0x3f2, %dx             # 软驱控制卡的数字输出寄存器DOR端口，只写。
+	mov $0, %al                 # 盘符0的A驱动器，关闭FDC，禁止DMA和中断请求，关闭马达
+	outsb                       # 将al中的内容输出dx指定的端口去
+	pop %dx
+	ret
+    
 sectors:
-    .word 0
+    .word 0                     # 存放当前启动软盘每磁道的扇区数
 
 msg1:
     .byte 13,10
-    .ascii "This program is working."
+    .ascii "BootSect is working ..."
     .byte 13,10,13,10
 
-    .=0x1fc
-    # 对齐语法，等价于.org 508；在该处补零，直到地址为 510 的第一扇区的最后两字节
-    # 然后在此填充好0xaa55魔术值，BIOS会识别硬盘中第一扇区以0xaa55结尾的为启动扇区
-    # 于是BIOS会装载代码并运行
+    # 下面一行是对齐语法，等价于.=0x1fc；在该处补零，直到地址为 510 的第一扇区的最
+    # 后两字节然后在此填充好0xaa55魔术值，BIOS会识别硬盘中第一扇区以0xaa55结尾的为
+    # 启动扇区，于是BIOS会装载代码并运行
+    .org 508
 
-root_dev:# 根文件系统设备号
+root_dev:# 根文件系统设备号，init/main.c中会用
     .word ROOT_DEV
 
+# 下面是启动盘具有有效引导扇区的标志。仅供BIOS中的程序加载引导扇区时识别使用。它必须
+# 位于引导扇区的最后两个字节中。
 boot_flag:
     .word 0xAA55
 
