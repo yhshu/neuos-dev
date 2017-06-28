@@ -164,9 +164,13 @@ ok1_read:
 ok2_read:
     # 读当前磁道上指定开始扇区cl和需读扇区数al的数据到es:bx开始处，然后统计当前磁道
     # 上已经读取的扇区数并与磁道最大扇区数sector作比较；如果小于sector说明当前磁道
-    # 上的还有扇区未读；于是跳转到ok3_read处继续操作
-    call read_track
-    mov
+    # 上的还有扇区未读；于是跳转到ok3_read处继续操作。
+    call read_track # 读当前磁道上指定开始扇区和需读扇区数的数据
+    mov cx, ax      # cx = 该次操作已读取的扇区数
+    add ax, sread   # 加上当前磁道上已经读取的扇区数
+    
+    cmp %cs:sectors+0, %ax  # 判断当前磁道是否还有扇区未读
+    jnc ok3_read            # 还有扇区
 
 sectors:
     .word 0
