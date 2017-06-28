@@ -278,7 +278,7 @@ msg1:
     .org 508
 
 root_dev:# 根文件系统设备号，init/main.c中会用
-    .word ROOT_DEV
+    .word root_dev
 
 # 下面是启动盘具有有效引导扇区的标志。仅供BIOS中的程序加载引导扇区时识别使用。它必须
 # 位于引导扇区的最后两个字节中。
