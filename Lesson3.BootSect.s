@@ -1,13 +1,17 @@
 # Lesson3：将操作系统装载到正确的地址，设置中断向量表（GDT）后切换到保护模式。
 
-# 装载的内容分为三部分
+# bootsect.s              (C) 1991 Linus Torvalds
+
+# bootsect.s装载的内容分为三部分
 # 0x9000:0000 bootsect
 # 0x9000:0200 setup
 # 0x1000:0000 system
 
 .code16
-.equ SYSSIZE, 0x3000    # system size是要加载的系统模块的长度。
+.equ SYSSIZE, 0x3000    
+# system size是要加载的系统模块的长度，单位是节，16字节为1节
 # 0x3000是196kb，对于当前OS版本空间足够。
+
 
 .global _start
 .global begtext, begdata, begbss, endtext, enddata, endbss # 定义6个全局标识符
@@ -32,7 +36,7 @@ begbss:
 ljmp $BOOTSEG, $_start   # 修改cs寄存器为BOOTSEG, 并跳转到_start处执行代码
 
 # 第一部分：复制bootsect
-# # 初始加载到0x07c00是OS与BIOS的约定。移至0x90000是根据OS的需要安排内存
+# # 初始加载到0x07c00是OS与BIOS的约定；移至0x90000是根据OS的需要安排内存
 _start:
     mov $BOOTSEG, %ax    # 将启动扇区从0x07c0:0000(31kb)处移动到0x9000:0000(576kb)
     mov %ax, %ds         # 以下是rep mov的用法
@@ -132,17 +136,37 @@ read_it: # 读取软驱
 die:
     jne die                 # 如果ES不是在64KB(0x1000)边界上，就在此停止
     xor %bx, %bx            # %bx = $0
+
 rp_read:
     mov %es, %ax
-    cmp $ENDSEG, %ax
+    cmp $ENDSEG, %ax        # 判断是否已加载所有数据
     jb ok1_read             # $ENDSEG > %ES时跳转
-                            # 当进位标志CF = 1时，jb指令跳转
-    ret
+    ret                     # 当进位标志CF = 1时，jb指令跳转
+    
 ok1_read:
+# 计算和验证当前磁道需要读取的扇区数，放在ax中。
+# 根据当前磁道还未读取的扇区以及段内数据字节开始偏移位置，计算如果全部读取这些
+# 未读扇区，所读总字节数是否会超过64KB段长度的限制。若超过，则根据此次最多能读入
+# 的字节数（64KB-段内偏移位置），计算出此次需要读取的扇区数。
     mov %cs:sectors+0, %ax
     sub sread, %ax
     mov %ax, %cx            # 计算尚未读取的扇区
-    shl
+    shl $9, %cx             # shl指令逻辑左移9位，即乘以512
+    add %bx, %cx            # cx = cx * 512字节 + 段内当前偏移值（bx）
+    jnc ok2_read            # 如果没有超过64K大，跳转到ok2_read
+    je ok2_read
+    # 若加上此次将读取的磁道上所有未读扇区时超过64KB，则计算此时最多能读入的字节数：
+    # （64KB-段内读偏移位置），再转换成需读取的扇区数；其中0减某数就是取该数64KB的补值
+    xor %ax, %ax
+    sub %bx, %ax
+    shr $9, %ax             # shr指令逻辑右移9位，即除以512
+
+ok2_read:
+    # 读当前磁道上指定开始扇区cl和需读扇区数al的数据到es:bx开始处，然后统计当前磁道
+    # 上已经读取的扇区数并与磁道最大扇区数sector作比较；如果小于sector说明当前磁道
+    # 上的还有扇区未读；于是跳转到ok3_read处继续操作
+    call read_track
+    mov
 
 sectors:
     .word 0
