@@ -12,7 +12,6 @@
 # system size是要加载的系统模块的长度，单位是节，16字节为1节
 # 0x3000是196kb，对于当前OS版本空间足够。
 
-
 .global _start
 .global begtext, begdata, begbss, endtext, enddata, endbss # 定义6个全局标识符
 .text # 文本段
@@ -93,22 +92,22 @@ demo_load_ok:
     mov %ax, %es
 
 print_msg:
-# 显示一段信息
-    mov $0x03,%ah       # 输出信息之前读取光标位置，中断返回使DH为行，DL为列 
-    xor %bh,%bh         # bh = 0
+# 后续装载系统模块需要装载240个扇区，是之前装载扇区数量的60倍，在此处显示一条信息提示用户等待
+    mov $0x03, %ah          # 输出信息之前读取光标位置，中断返回使DH为行，DL为列 
+    xor %bh, %bh            # bh = 0
     int $0x10
 
-    mov $30,%cx         # 设定输出长度
-    mov $0x0007,%bx     
-    mov $msg1,%bp
-    mov $0x1301,%ax     # 输出字符串，移动光标
-    int $0x10           # 输出的内容是从ES:BP取得的
+    mov $30, %cx            # 设定输出长度
+    mov $0x0007, %bx        # 通常 page 0, attribute 7
+    mov $msg1, %bp
+    mov $0x1301, %ax        # 输出字符串，移动光标
+    int $0x10               # 输出的内容是从ES:BP取得的
 
 # 第三部分：将整个系统镜像装载到0x1000:0000开始的内存中
     mov $SYSSEG, %ax
-    mov %ax, %es        # es作为参数
-    call read_it        # 加载240个扇区
-    call kill_motor     # 关闭驱动器
+    mov %ax, %es            # es作为参数
+    call read_it            # 加载240个扇区
+    call kill_motor         # 关闭软驱电机
 
     mov %cs:root_dev, %ax   # Root Device根文件系统设备
     cmp $0, %ax             # 判断根设备号是否为0
