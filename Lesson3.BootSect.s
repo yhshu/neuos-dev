@@ -40,7 +40,7 @@ ljmp $BOOTSEG, $_start   # 修改cs寄存器为BOOTSEG, 并跳转到_start处执
 _start:
     mov $BOOTSEG, %ax    # 将启动扇区从0x07c0:0000(31kb)处移动到0x9000:0000(576kb)
     mov %ax, %ds         # 以下是rep mov的用法
-    mov %INITSEG, %ax    # 源地址ds:si = 0x07co:0000
+    mov $INITSEG, %ax    # 源地址ds:si = 0x07co:0000
     mov %ax, %es         # 目的地址es:di = 0x9000:0000
     mov $256, %cx        # 移动次数 %cx = 256
     xor %si, %si         # movsw每次移动一个word（2byte），共256*2=512byte，即一个启动扇区的大小
@@ -111,7 +111,7 @@ print_msg:
     call kill_motor     # 关闭驱动器
 
     mov %cs:root_dev, %ax   # Root Device根文件系统设备
-    cmp $0, &ax             # 判断根设备号是否为0
+    cmp $0, %ax             # 判断根设备号是否为0
     jne root_defined        # ZF = 0时跳转，即ax不为0时，即根设备已设置
     # 根设备未设置
     mov %cs:sectors+0, %bx  
@@ -179,9 +179,9 @@ ok2_read:
     # 读当前磁道上指定开始扇区cl和需读扇区数al的数据到es:bx开始处，然后统计当前磁道
     # 上已经读取的扇区数并与磁道最大扇区数sector作比较；如果小于sector说明当前磁道
     # 上的还有扇区未读；于是跳转到ok3_read处继续操作。
-    call read_track # 读当前磁道上指定开始扇区和需读扇区数的数据
-    mov cx, ax      # cx = 该次操作已读取的扇区数
-    add ax, sread   # 加上当前磁道上已经读取的扇区数
+    call read_track         # 读当前磁道上指定开始扇区和需读扇区数的数据
+    mov %cx, %ax            # cx = 该次操作已读取的扇区数
+    add %ax, sread          # 加上当前磁道上已经读取的扇区数
     
     cmp %cs:sectors+0, %ax  # 判断当前磁道是否还有扇区未读
     jnc ok3_read            # 还有扇区未读，跳转到ok3_read
@@ -194,13 +194,13 @@ ok2_read:
 
 ok4_read:
     mov %ax, head           # 保存当前磁头号
-    xor ax, ax              # 清零当前磁道已读扇区数
+    xor %ax, %ax              # 清零当前磁道已读扇区数
 
 ok3_read:
     # 如果当前磁道上仍有未读扇区，则首先保存当前磁道已读扇区数，
     # 然后调整存放数据处的开始位置。若小于64KB边界值，则跳转到
     # rp_read处，继续读数据。
-    mov sread, ax           # 保存当前磁道已读扇区数
+    mov sread, %ax           # 保存当前磁道已读扇区数
     shl $9, %cx             # 上次已读扇区数 * 512字节
     add %cx, %bx            # 调整当前段内数据开始位置
     jnc rp_read
@@ -291,3 +291,4 @@ boot_flag:
     enddata:
 .bss
     endbss:
+    
