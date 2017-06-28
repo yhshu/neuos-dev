@@ -190,7 +190,7 @@ ok2_read:
     # 如果已经完成，则读下一磁道。
     mov $1, %ax
     jne ok4_read            # 如果是0磁头，再读1磁头面上的扇区数据
-    inc track               # 否则读下一磁道
+    incw track              # 否则读下一磁道;incw表明是16位
 
 ok4_read:
     mov %ax, head           # 保存当前磁头号
