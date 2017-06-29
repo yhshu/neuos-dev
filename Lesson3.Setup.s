@@ -48,7 +48,7 @@ show_text:
 
 _start:
 # int $0x10 service 3 读光标位置
-# AH = 03
+# 功能号：AH = 03
 # BH = 页号
 # 返回：
 # CH = 扫描开始线
@@ -63,7 +63,7 @@ _start:
 	mov %dx, %ds:0
 
 # int $0x15 service 0x88 取扩展内存大小的值（KB）
-# AH = 88h
+# 功能号：AH = 88h
 # 返回：
 # AX = 从0x1000000(1M)处开始的扩展内存大小(KB)
 # 若出错则CF置位，AX = 出错码
@@ -72,7 +72,7 @@ _start:
     mov %ax, %ds:2
 
 # int $0x10 service 0xF 取显卡显示模式
-# AH = 0F
+# 功能号：AH = 0F
 # 返回：
 # AH = 字符列数
 # AL = 显示模式
@@ -104,5 +104,50 @@ _start:
     mov %ax, %ds
     lds %ds:4*0x41, %si                 # ds:4*0x41赋给ds:si
     mov $INITSEG, %ax
-    
+    mov %ax, %es
+    mov $0x0080, %di
+    mov $0x10, %cx
+    rep movsb                           
+    # rep movsb将ds:si赋给es:di；若方向标志DF是0则si加1、di加1，否则si减1、di减1；CX减1，再判断CX决定是否继续
+
 # 第二个硬盘参数表
+    mov $0x0000, %ax
+    mov %ax, %ds
+    lds %ds:4*0x46, %si
+    mov $INITSEG, %ax
+    mov %ax, %es
+    mov $0x0090, %di
+    mov $0x10, %cx
+    rep movsb 
+
+# 检查第二块硬盘是否存在，如果不存在则清空相应的参数表
+# int $0x15, service 0x15
+# 功能号：AH = 15h 
+# 输入：DL = 驱动器号（0是软盘1，盘符为A；1是软盘2；80h是硬盘1,81h是硬盘2；仅支持两块硬盘）
+# 返回：
+# AH = 类型码 00-无此盘；01-软驱，无change-line支持；02-软驱（或其他可移动设备），
+# 有change-line支持；03-硬盘
+# 如果成功 CF = 0；如果失败 CF = 1
+    mov $0x1500, %ax
+    mov $0x81, %dl 
+    int $0x13
+    jc no_disk1                         # CF = 1 时跳转，即不是硬盘时
+    cmp $3, %ah
+    je is_disk1                         # 由上行代码，AH是3时跳转，即是硬盘时
+
+no_disk1:                               # 没有第二块硬盘，清除第二个硬盘参数表
+    mov $INITSEG, %ax
+    mov %ax, %es
+    mov $0x0090, %di
+    mov $0x10, %cx
+    mov $0x00, %ax
+    rep stosb                           # 按字节把AL或AX中的数据装入ES:DI指向的存储单元，若方向标志DF=0则DI加1，否则减1。
+
+is_disk1:
+# 下面将切换到保护模式，这是非常重要的一步
+# 进行切换到保护模式前的准备工作
+    cli                                 # 关中断，在此不允许任何中断
+
+
+
+
