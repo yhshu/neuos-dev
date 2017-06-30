@@ -146,8 +146,35 @@ no_disk1:                               # 没有第二块硬盘，清除第二�
 is_disk1:
 # 下面将切换到保护模式，这是非常重要的一步
 # 进行切换到保护模式前的准备工作
-    cli                                 # 关中断，在此不允许任何中断
+    cli                                 # 关中断；从此开始不允许中断
+    
+# 首先我们将system模块从0x1000:0000移到0x0000:0000处
+# bootsect引导程序是将system模块读入到0x10000(64KB)开始的位置。由于当时假设system模块
+# 最大长度不会超过0x80000(512KB)，即其末端不会超过内存地址0x90000，所以bootsect会把自己
+# 移动到0x90000开始的地方，并把setup加载到它后面。下面这段程序的用途是再把整个system模块
+# 移动到0x00000位置，即把从0x10000到0x8ffff的内存数据块(512KB)整块地向内存低端移动了0x10000
+# (64KB)的位置。
+    mov $0x0000, %ax
+    cld                                 # 使方向标志DF = 0
 
+do_move:
+    mov %ax, %es
+    add $0x1000, %ax
+    cmp $0x9000, %ax                    # 判断是否把最后一段(从0x8000段开始的64KB)移动完
+    jz end_move                         # 如果移动完，跳转
+    mov %ax, %ds                        # ds:si 是源地址（初始是0x1000:0x0）
+    sub %di, %di
+	sub %si, %si
+	mov $0x8000, %cx                   	# 移动0x8000字（64KB字节）
+	rep movsw
+	jmp do_move
 
+# 加载GDT、IDT等
 
+end_move:
+    mov $SETUPSEG, %ax
+    mov %ax, %ds                        # ds指向本程序（setup）段
+    lgdt gdt_48
 
+# 开启A20地址线，使得OS可以访问64KB以上的内存
+    inb
