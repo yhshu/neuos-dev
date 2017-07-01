@@ -97,7 +97,7 @@ print_msg:
     xor %bh, %bh            # bh = 0
     int $0x10
 
-    mov $25, %cx            # 设定输出长度
+    mov $30, %cx            # 设定输出长度
     mov $0x0007, %bx        # 通常 page 0, attribute 7
     mov $msg1, %bp
     mov $0x1301, %ax        # 输出字符串，移动光标
@@ -275,7 +275,7 @@ msg1:
     # 下面一行是对齐语法，.org 508等价于.=0x1fc；在该处补零，直到地址为 510 的第一扇区的最
     # 后两字节然后在此填充好0xaa55魔术值，BIOS会识别硬盘中第一扇区以0xaa55结尾的为
     # 启动扇区，于是BIOS会装载代码并运行
-    .=508
+    .= 508
 
 root_dev: # 根文件系统设备号，init/main.c中会用
     .word ROOT_DEV
