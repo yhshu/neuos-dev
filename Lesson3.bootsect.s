@@ -97,7 +97,7 @@ print_msg:
     xor %bh, %bh            # bh = 0
     int $0x10
 
-    mov $23, %cx            # 设定输出长度
+    mov $30, %cx            # 设定输出长度
     mov $0x0007, %bx        # 通常 page 0, attribute 7
     mov $msg1, %bp
     mov $0x1301, %ax        # 输出字符串，移动光标
