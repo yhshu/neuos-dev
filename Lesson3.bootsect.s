@@ -109,7 +109,7 @@ print_msg:
     call read_it            # 加载240个扇区
     call kill_motor         # 关闭软驱电机
 
-    mov %cs:root_dev, %ax   # Root Device根文件系统设备
+    mov %cs:ROOT_DEV, %ax   # Root Device根文件系统设备
     cmp $0, %ax             # 判断根设备号是否为0
     jne root_defined        # ZF = 0时跳转，即ax不为0时，即根设备已设置
     # 根设备未设置
@@ -127,7 +127,7 @@ undef_root:              # 若未找到根设备，死循环（死机）
     jmp undef_root
 
 root_defined:
-    mov %ax, %cs:root_dev+0
+    mov %ax, %cs:ROOT_DEV+0
 
 # 完成全部到内存的装载，跳转到setup.s，现位于0x9020:0000
     ljmp $SETUPSEG, $0
@@ -272,13 +272,13 @@ msg1:
     .ascii "Bootsect is working ..."
     .byte 13,10,13,10
 
-    # 下面一行是对齐语法，等价于.=0x1fc；在该处补零，直到地址为 510 的第一扇区的最
+    # 下面一行是对齐语法，.org 508等价于.=0x1fc；在该处补零，直到地址为 510 的第一扇区的最
     # 后两字节然后在此填充好0xaa55魔术值，BIOS会识别硬盘中第一扇区以0xaa55结尾的为
     # 启动扇区，于是BIOS会装载代码并运行
-    .org 508
+    .=508
 
 root_dev:# 根文件系统设备号，init/main.c中会用
-    .word root_dev
+    .word ROOT_DEV
 
 # 下面是启动盘具有有效引导扇区的标志。仅供BIOS中的程序加载引导扇区时识别使用。它必须
 # 位于引导扇区的最后两个字节中。
