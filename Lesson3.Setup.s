@@ -33,7 +33,7 @@
 show_text:
 # 显示一段文本
     mov $SETUPSEG, %ax
-    mov %ax, %endbss
+    mov %ax, %es
     mov $0x03, %ah
     xor %bh, %bh
     int $0x10                   
@@ -79,7 +79,7 @@ _start:
 # BH = 当前显示页
     mov $0x0f, %ah
     int $0x10
-    mov $bx, %ds:4
+    mov %bx, %ds:4
     mov %ax, %ds:6
 
 # int $0x10 service 0x12 检查显示方式(EGA/VGA)并取参数
@@ -228,10 +228,3 @@ msg:
 	.byte 13, 10
 	.ascii "You've successfully load the floppy data into RAM"
 	.byte 13, 10, 13, 10
-
-.text
-endtext:
-.data
-enddata:
-.bss
-endbss:
