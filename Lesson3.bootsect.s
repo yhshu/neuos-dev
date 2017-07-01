@@ -23,16 +23,16 @@ begbss:
 .text # 文本段
 
 # bootsect对内存的规划
-.equ SETUPLEN, 0x04      # Setup 程序占用的扇区数
-.equ BOOTSEG, 0x07c0     # bootsector原始地址
-.equ INITSEG, 0x9000     # bootsector将有的新地址
+    .equ SETUPLEN, 0x04      # Setup 程序占用的扇区数
+    .equ BOOTSEG, 0x07c0     # bootsector原始地址
+    .equ INITSEG, 0x9000     # bootsector将有的新地址
 
-.equ SETUPSEG, 0x9020    # setup.s的代码会被移动到这里，是BootSector后一个扇区
-.equ SYSSEG, 0x1000      # system 程序的装载地址
-.equ ROOT_DEV, 0x301      # 指定/dev/fda为系统镜像所在的设备
-.equ ENDSEG, SYSSEG + SYSSIZE # system末尾扇区
+    .equ SETUPSEG, 0x9020    # setup.s的代码会被移动到这里，是BootSector后一个扇区
+    .equ SYSSEG, 0x1000      # system 程序的装载地址
+    .equ ROOT_DEV, 0x301      # 指定/dev/fda为系统镜像所在的设备
+    .equ ENDSEG, SYSSEG + SYSSIZE # system末尾扇区
 
-ljmp $BOOTSEG, $_start   # 修改cs寄存器为BOOTSEG, 并跳转到_start处执行代码
+    ljmp $BOOTSEG, $_start   # 修改cs寄存器为BOOTSEG, 并跳转到_start处执行代码
 
 # 第一部分：复制bootsect
 # # 初始加载到0x07c00是OS与BIOS的约定；移至0x90000是根据OS的需要安排内存
