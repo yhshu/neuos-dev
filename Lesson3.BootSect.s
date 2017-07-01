@@ -97,7 +97,7 @@ print_msg:
     xor %bh, %bh            # bh = 0
     int $0x10
 
-    mov $30, %cx            # 设定输出长度
+    mov $23, %cx            # 设定输出长度
     mov $0x0007, %bx        # 通常 page 0, attribute 7
     mov $msg1, %bp
     mov $0x1301, %ax        # 输出字符串，移动光标
@@ -179,8 +179,8 @@ ok2_read:
     # 上已经读取的扇区数并与磁道最大扇区数sector作比较；如果小于sector说明当前磁道
     # 上的还有扇区未读；于是跳转到ok3_read处继续操作。
     call read_track         # 读当前磁道上指定开始扇区和需读扇区数的数据
-    mov %cx, %ax            # cx = 该次操作已读取的扇区数
-    add %ax, sread          # 加上当前磁道上已经读取的扇区数
+    mov %ax, %cx            # cx = 该次操作已读取的扇区数
+    add sread, %ax          # 加上当前磁道上已经读取的扇区数
     
     cmp %cs:sectors+0, %ax  # 判断当前磁道是否还有扇区未读
     jnc ok3_read            # 还有扇区未读，跳转到ok3_read
@@ -188,6 +188,7 @@ ok2_read:
     # 若该磁道的当前磁头面所有扇区已经读取，则读该磁道的下一磁头面（1号磁头）上的数据
     # 如果已经完成，则读下一磁道。
     mov $1, %ax
+    sub head, %ax
     jne ok4_read            # 如果是0磁头，再读1磁头面上的扇区数据
     incw track              # 否则读下一磁道;incw表明是16位
 
@@ -199,7 +200,7 @@ ok3_read:
     # 如果当前磁道上仍有未读扇区，则首先保存当前磁道已读扇区数，
     # 然后调整存放数据处的开始位置。若小于64KB边界值，则跳转到
     # rp_read处，继续读数据。
-    mov sread, %ax           # 保存当前磁道已读扇区数
+    mov %ax, sread           # 保存当前磁道已读扇区数
     shl $9, %cx             # 上次已读扇区数 * 512字节
     add %cx, %bx            # 调整当前段内数据开始位置
     jnc rp_read
@@ -268,7 +269,7 @@ sectors:
 
 msg1:
     .byte 13,10
-    .ascii "BootSect is working ..."
+    .ascii "Bootsect is working ..."
     .byte 13,10,13,10
 
     # 下面一行是对齐语法，等价于.=0x1fc；在该处补零，直到地址为 510 的第一扇区的最
