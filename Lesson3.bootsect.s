@@ -29,7 +29,7 @@ begbss:
 
 .equ SETUPSEG, 0x9020    # setup.s的代码会被移动到这里，是BootSector后一个扇区
 .equ SYSSEG, 0x1000      # system 程序的装载地址
-.equ ROOTDEV, 0x301      # 指定/dev/fda为系统镜像所在的设备
+.equ ROOT_DEV, 0x301      # 指定/dev/fda为系统镜像所在的设备
 .equ ENDSEG, SYSSEG + SYSSIZE # system末尾扇区
 
 ljmp $BOOTSEG, $_start   # 修改cs寄存器为BOOTSEG, 并跳转到_start处执行代码
@@ -109,7 +109,7 @@ print_msg:
     call read_it            # 加载240个扇区
     call kill_motor         # 关闭软驱电机
 
-    mov %cs:ROOT_DEV, %ax   # Root Device根文件系统设备
+    mov %cs:root_dev, %ax   # Root Device根文件系统设备
     cmp $0, %ax             # 判断根设备号是否为0
     jne root_defined        # ZF = 0时跳转，即ax不为0时，即根设备已设置
     # 根设备未设置
@@ -127,7 +127,7 @@ undef_root:              # 若未找到根设备，死循环（死机）
     jmp undef_root
 
 root_defined:
-    mov %ax, %cs:ROOT_DEV+0
+    mov %ax, %cs:root_dev+0
 
 # 完成全部到内存的装载，跳转到setup.s，现位于0x9020:0000
     ljmp $SETUPSEG, $0
