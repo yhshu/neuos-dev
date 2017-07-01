@@ -89,7 +89,7 @@ _start:
 # BL = 安装的显示内存。0x00-64k；0x01-128k；0x02-192k；0x03-256k。
 # CX = 显示卡特性参数
     mov $0x12, %ah
-    mov $0x10, %BL
+    mov $0x10, %bl
     int $0x10
     mov %ax, %ds:8
     mov %bx, %ds:10
@@ -108,7 +108,7 @@ _start:
     mov $0x0080, %di
     mov $0x10, %cx
     rep movsb                           
-    # rep movsb将ds:si赋给es:di；若方向标志DF是0则si加1、di加1，否则si减1、di减1；CX减1，再判断CX决定是否继续
+    # 两个指令rep movsb将ds:si赋给es:di；若方向标志DF是0则si加1、di加1，否则si减1、di减1；CX减1，再判断CX决定是否继续
 
 # 第二个硬盘参数表
     mov $0x0000, %ax
