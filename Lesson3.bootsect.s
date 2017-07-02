@@ -7,20 +7,20 @@
 # 0x9000:0200 setup
 # 0x1000:0000 system
 
-.code16
-.equ SYSSIZE, 0x3000    
+    .code16
+    .equ SYSSIZE, 0x3000    
 # system size是要加载的系统模块的长度，单位是节，16字节为1节
 # 0x3000是196kb，对于当前OS版本空间足够。
 
-.global _start
-.global begtext, begdata, begbss, endtext, enddata, endbss # 定义6个全局标识符
-.text # 文本段
-begtext:
-.data # 数据段
-begdata:
-.bss # 未初始化数据段
-begbss:
-.text # 文本段
+    .global _start
+    .global begtext, begdata, begbss, endtext, enddata, endbss # 定义6个全局标识符
+    .text # 文本段
+    begtext:
+    .data # 数据段
+    begdata:
+    .bss # 未初始化数据段
+    begbss:
+    .text # 文本段
 
 # bootsect对内存的规划
     .equ SETUPLEN, 0x04      # Setup 程序占用的扇区数
