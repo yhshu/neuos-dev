@@ -183,7 +183,7 @@ ok2_read:
     add sread, %ax          # 加上当前磁道上已经读取的扇区数
     
     cmp %cs:sectors+0, %ax  # 判断当前磁道是否还有扇区未读
-    jnc ok3_read            # 还有扇区未读，跳转到ok3_read
+    jne ok3_read            # 还有扇区未读，跳转到ok3_read
     
     # 若该磁道的当前磁头面所有扇区已经读取，则读该磁道的下一磁头面（1号磁头）上的数据
     # 如果已经完成，则读下一磁道。
@@ -291,4 +291,3 @@ boot_flag:
     enddata:
 .bss
     endbss:
-    
