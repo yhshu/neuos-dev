@@ -176,7 +176,7 @@ end_move:
     mov %ax, %ds                        # ds指向本程序（setup）段
     lgdt gdt_48
 
-# 开启A20地址线，使得OS可以访问64KB以上的内存
+# 开启A20地址线，使得内核可以访问64KB以上的内存
     inb $0x92, %al 
     orb $0b00000010, %al
     outb %al, $0x92
