@@ -93,7 +93,7 @@ setup_idt:
     movw %dx, %ax                           # 偏移值的低16位置入eax的低16位中。
                                             # 此时eax含有门描述符低4字节的值。
     mov $0x8E00, %dx                        # 此时edx含有门描述符高4字节的值。
-    lea _idt, %edi                          # _idt是中断描述符表的地址。
+    lea idt, %edi                          # _idt是中断描述符表的地址。
     mov $256, %cx
 
 rp_sidt:
@@ -156,8 +156,7 @@ ignore_int:
 	mov %ax, %fs
 	pushl $int_msg                  # 把调用printk函数的参数指针入栈。
     # 若符号int_msg前不加$，则表示把int_msg符号处的长字‘Unkn’入栈。
-	call _printk                    # 该函数在/kernel/printk.c中。
-                                    # '_printk'是printk编译后模块中的内部表示法。
+	call printk                    # 该函数在/kernel/printk.c中。
 	popl %eax
 	pop %fs
 	pop %es
