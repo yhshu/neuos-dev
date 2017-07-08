@@ -74,39 +74,39 @@ int get_cursor()
 
 void printk(char *fmt, ...) //可变参数函数
 {
-    va_list ap;        //参数列表
-    va_start(ap, fmt); //设置传递给函数的参数列表的第一个可选参数
+    va_list ap;             //参数列表
+    va_start(ap, fmt);      //设置传递给函数的参数列表的第一个可选参数
 
     char c, *s;
     while (*fmt)
     {
-        c = *fmt++;   //先赋值再自增
-        if (c != '%') //如果不是%，输出字符，跳转下一循环
+        c = *fmt++;         //先赋值再自增
+        if (c != '%')       //如果不是%，输出字符，跳转下一循环
         {
             video_putchar(c);
             continue;
         }
-        c = *fmt++; //如果是%，读取%后面的字符
+        c = *fmt++;         //如果是%，读取%后面的字符
         if (c == '\0')
             break;
         switch (c)
         {
-        case 'd': //%d：整数
-            printnum(va_arg(ap, int), 10, 1);
-            break;
-        case 'u': //%u：无符号整数
-            printnum(va_arg(ap, int), 10, 0);
-            break;
-        case 'x': //%x：16进制整数
-            printnum(va_arg(ap, int), 16, 0);
-        case 's': //%s：字符串
-            s = va_arg(ap, char *);
-            while (*s)
-                video_putchar(*s++);
-            break;
-        case '%':
-            video_putchar('%');
-            break;
+            case 'd':       //%d：整数
+                printnum(va_arg(ap, int), 10, 1);
+                break;
+            case 'u':       //%u：无符号整数
+                printnum(va_arg(ap, int), 10, 0);
+                break;
+            case 'x':       //%x：16进制整数
+                printnum(va_arg(ap, int), 16, 0);
+            case 's':       //%s：字符串
+                s = va_arg(ap, char *);
+                while (*s)
+                    video_putchar(*s++);
+                break;
+            case '%':
+                video_putchar('%');
+                break;
         }
     }
     return;
@@ -131,6 +131,7 @@ void printnum(int num, int base ,int sign) //base进制，sign符号
         return ;
     }
 
+    //如果num != 0
     while(num)
     {
         buf[cnt++] = digits[num % base];
@@ -183,12 +184,12 @@ void video_putchar(char ch)
         video_putchar_at(ch, video_x, video_y, 0x0F);
         video_x++;
     }
-    if(video_x >= VIDEO_X_SZ)   //行满
+    if(video_x >= VIDEO_X_SZ)   //行满，输出到下一行
     {
         video_x = 0;
         video_y++;
     }
-    if(video_y >= VIDEO_Y_SZ) //列满滚屏
+    if(video_y >= VIDEO_Y_SZ)   //列满，滚屏
     {
         roll_screen();
         video_x = 0;
@@ -199,7 +200,7 @@ void video_putchar(char ch)
     return ;
 }
 
-void roll_screen()  //滚屏
+void roll_screen()  //putchar过程中的滚屏
 {
     int i;
     //将下一行复制到这一行
