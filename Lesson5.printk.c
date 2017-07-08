@@ -166,8 +166,8 @@ void video_putchar_at(char ch, int x, int y, char attr)
         x = 80;
     if(y >= 25)
         y = 25;
-    *(video_buffer + 2 * (x + 80 * y)) = ch;
-    *(video_buffer + 2 * (x + 80 * y) + 1) = attr;
+    *(video_buffer + 2 * (x + 80 * y)) = ch;            //字符
+    *(video_buffer + 2 * (x + 80 * y) + 1) = attr;      //颜色
     return ;
 }
 
