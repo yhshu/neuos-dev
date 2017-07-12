@@ -35,6 +35,7 @@ unsigned long *linear_to_pte(unsigned long addr)
     {
         return 0;
     }
-    //页表地址
-    pde = (unsigned long *)(*pde & 0xfffff000);
+    //页表地址 + 页表索引 = PTE
+    pde = (unsigned long*)(*pde & 0xfffff000);
+    return pde+()
 }
