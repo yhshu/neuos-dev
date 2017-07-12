@@ -36,6 +36,69 @@ unsigned long *linear_to_pte(unsigned long addr)
         return 0;
     }
     //页表地址 + 页表索引 = PTE
-    pde = (unsigned long*)(*pde & 0xfffff000);
-    return pde+()
+    pde = (unsigned long *)(*pde & 0xfffff000);
+    return pde + ((addr >> 12) & 0x3ff);
+}
+
+void disable_linear(unsigned long addr)
+{
+    unsigned long *pte = linear_to_pte(addr);
+    *pte = 0;
+    invalidate(); //刷新页表缓存
+    return;
+}
+
+void mm_read_only(unsigned long addr)
+{
+    unsigned long *pte = linear_to_pte(addr);
+    printk("Before: 0x%x\n", *pte);
+    *pte = *pte & 0xfffffffd;
+    printk("After: 0x%x\n", *pte);
+    invalidate();
+    return;
+}
+
+void mm_print_pageinfo(unsigned long addr)
+{
+    unsigned long *pte = linear_to_pte(addr);
+    printk("Linear addr: 0x%x, PTE addr: 0x%x. Flags[ ", addr, pte);
+    if (*pte & 0x1)
+        printk("P ");
+    if (*pte & 0x2)
+        printk("R/W");
+    else
+        printk("RO ");
+    if (*pte & 0x4)
+        printk("U/S ");
+    else
+        printk("S ");
+    printk("]\n");
+    printk("Phyaddr = %x\n", (*pte & 0xfffff000));
+}
+
+int mmtest_main(void)
+{
+    int i = 0;
+    printk("Running Memory function tests\n");
+    printk("1. Make Linear Address 0xdad233 unavailable\n");
+
+    disable_linear(0xdad233);
+
+    printk("2. Put page(0x300000) at linear address 0xdad233\n");
+    put_page(0x300000, 0xdad233);
+
+    unsigned long *x = 0xdad233;
+    *x = 0x23333333;
+    printk("X = %x\n", *x);
+
+    printk("3. Make 0xdad233 READ ONLY\n");
+    mm_read_only(0xdad233);
+    x = 0xdad233;
+
+    asm volatile("mov %%cr0, %%eax\n\t"
+                 "orl $0x00010000, %%eax\n\t"
+                 "mov %%eax, %%cr0\n\t" ::);
+
+    printk("4. Print the page info of 0xdad233 in human readable mode\n");
+    mm_print_pageinfo(0xdad233);
 }
