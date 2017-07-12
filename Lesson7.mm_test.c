@@ -42,6 +42,7 @@ unsigned long *linear_to_pte(unsigned long addr)
 
 void disable_linear(unsigned long addr)
 {
+    //修改现有的PTE，使得present位为0
     unsigned long *pte = linear_to_pte(addr);
     *pte = 0;
     invalidate(); //刷新页表缓存
