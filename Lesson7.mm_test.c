@@ -3,7 +3,7 @@
 #include <linux/kernel.h>
 
 #define invalidate() __asm__ volatile("mov %%eax, %%cr3" ::"a"(0))
-//用于使得TLB（页表缓存）失效，刷新缓存。
+//内嵌汇编；用于使得TLB（页表缓存）失效，刷新缓存。
 
 unsigned long put_page(unsigned long page, unsigned long address);
 //释放物理内存地址addr开始的一页面内存。修改页面映射数组mem_map[]中引用次数信息。
@@ -20,8 +20,7 @@ void test_put_page()
     char *b = 0x100000;
     calc_mem(); //显示当前内存用量
     *b = 'k';
-    while (1)
-        ;
+    while (1);
     return;
 }
 
