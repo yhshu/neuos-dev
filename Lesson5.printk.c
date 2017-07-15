@@ -155,7 +155,7 @@ void video_clear()  //清屏
     {
         for(j = 0; j < VIDEO_Y_SZ; j++) 
         {
-           video_putchar_at(' ', i, j, 0x0F);  //此处不要使用0x00, 否则会失去闪烁的光标！
+           video_putchar_at(' ', i, j, 0x0F);  //0x0F是亮白；此处不要使用0x00, 否则会失去闪烁的光标！
         }
     }
     return ;
@@ -168,20 +168,20 @@ void video_putchar_at(char ch, int x, int y, char attr)
     if(y >= 25)
         y = 25;
     *(video_buffer + 2 * (x + 80 * y)) = ch;            //字符
-    *(video_buffer + 2 * (x + 80 * y) + 1) = attr;      //颜色
+    *(video_buffer + 2 * (x + 80 * y) + 1) = attr;      //光标
     return ;
 }
 
 void video_putchar(char ch)
 {
-    if(ch == '\n')              //换行
+    if(ch == '\n')              //换行符
     {
         video_x = 0;
         video_y++;
     }
-    else                        //不换行
+    else                        //不是换行符
     {
-        video_putchar_at(ch, video_x, video_y, 0x0F);
+        video_putchar_at(ch, video_x, video_y, 0x0F);   
         video_x++;
     }
     if(video_x >= VIDEO_X_SZ)   //行满，输出到下一行
