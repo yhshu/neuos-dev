@@ -115,5 +115,16 @@ void free_page(unsigned long addr)
     if (addr >= HIGH_MEMORY)
         return; //不可超出可用内存高端
 
-    addr =
+    addr = MAP_NR(addr); //计算出需要的页号
+    if (mem_map[addr]--)
+        return; //如果该页为被占用状态(mem_map[addr]==1)，清零并返回
+    mem_map[addr] = 0;
+    panic(Trying to free page !); //不应出现这种情况
+}
+
+//释放页表，以及相应的物理页释放，并释放该页目录项占用的物理页
+int free_page_tables(unsigned long from, unsigned long size)
+{
+    unsigned long *pg_tbl;
+    unsigned long *pg_dir, nr;
 }
