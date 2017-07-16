@@ -127,4 +127,47 @@ int free_page_tables(unsigned long from, unsigned long size)
 {
     unsigned long *pg_tbl;
     unsigned long *pg_dir, nr;
+
+    //检查是否为 4MB 内存边界（该函数仅处理连续的4MB内存块）
+    if (from & 0x3fffff)
+        panic("free_page_tables called with wrong alignment");
+    //如果释放低 4MB 内存，也会引发错误，即from == 0
+    if (!from)
+        panic("try to free up swapper memory space");
+    size = (size + 0x3fffff) >> 22; //计算所占用的目录项数
+    //计算目录项地址
+    pg_dir = (unsigned long *)((from >> 20) & 0xffc);
+
+    //首先释放页表项，然后释放目录项
+    //注意释放的是连续的目录/页表项。因而pg_dir自增即可
+    for (; size-- > 0; pg_dir++)
+    {
+        if (!(*pg_dir & 1)) //说明该目录项没有被使用
+            continue;
+        pg_tbl = (unsigned long *)(*pg_dir & 0xfffff000);
+        //开始释放页表项
+        for (nr = 0; nr < 1024; nr++)
+        {
+            if (*pg_tbl & 1) //此页存在
+                free_page(0xfffff000 & *pg_tbl);
+            *pg_tbl = 0;
+            pg_tbl++;
+        }
+        //释放页目录所占用的页
+        free_page(0xfffff000 & *pg_dir);
+        *pg_dir = 0;
+    }
+    invalidate(); //刷新页表缓存
+    return 0;
+}
+
+//用来将一页内存放入页表和页目录，即把相应的页表、页目录表填充
+//如果要put的物理页在内存中仍然是unset(mem_map值为0)，则先获取可用物理页
+//此函数假定pg_dir = 0(硬编码)
+//成功时返回该页的物理地址，失败/OOM 时返回0
+//参数 page 为页面的物理地址，address为线性地址
+unsigned long put_page(unsigned long page, unsigned long address)
+{
+    unsigned long *pg_tbl,tmp;
+    if(page<LOW_MEM||)
 }
