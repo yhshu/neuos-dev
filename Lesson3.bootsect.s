@@ -29,7 +29,7 @@
 
     .equ SETUPSEG, 0x9020    # setup.s的代码会被移动到这里，是BootSector后一个扇区
     .equ SYSSEG, 0x1000      # system 程序的装载地址
-    .equ ROOT_DEV, 0x301      # 指定/dev/fda为系统镜像所在的设备
+    .equ ROOT_DEV, 0x301     # 指定/dev/fda为系统镜像所在的设备
     .equ ENDSEG, SYSSEG + SYSSIZE # system末尾扇区
 
     ljmp $BOOTSEG, $_start   # 修改cs寄存器为BOOTSEG, 并跳转到_start处执行代码

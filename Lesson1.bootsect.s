@@ -8,32 +8,32 @@
     ljmp $BOOTSEG,$_start #修改cs寄存器为BOOTSEG，并跳转到_start处执行代码
 
 _start:
-    mov $BOOTSEG,%ax    #ax = BOOTSEG
-    mov %ax,%es         #设置ES寄存器，为输出字符串作准备
-    mov $0x03,%ah       #int 10，ah = 03H 执行的功能是获取光标位置和形状
-                        #在输出信息前读取光标位置储存在DX里，中断返回的DH为行，DL为列
-    xor %bh,%bh         #bh为显示页码，设为0
+    mov $BOOTSEG, %ax    #ax = BOOTSEG
+    mov %ax, %es         #设置ES寄存器，为输出字符串作准备
+    mov $0x03, %ah       #int 10，ah = 03H 执行的功能是获取光标位置和形状
+                         #在输出信息前读取光标位置储存在DX里，中断返回的DH为行，DL为列
+    xor %bh, %bh         #bh为显示页码，设为0
     int $0x10
 
-    mov     $20,%cx     #设定输出长度 cx = 20
-    mov     $0x0007,%bx #bx是显示页面；page 0, attribute 7 (normal) 设置必要的属性
-    #lea    msg1,%bp    #lea是取地址指令，bp是指针寄存器
-    mov     $msg1,%bp   
-    mov     $0x1301,%ax #写字符，移动光标 ax = 0x1301
-    int     $0x10       #使用这个中断0x10时，输出所得的，因而要设置好 ES 和 BP
+    mov     $20,%cx      #设定输出长度 cx = 20
+    mov     $0x0007, %bx #bx是显示页面；page 0, attribute 7 (normal) 设置必要的属性
+    #lea    msg1, %bp    #lea是取地址指令，bp是指针寄存器
+    mov     $msg1, %bp   
+    mov     $0x1301, %ax #写字符，移动光标 ax = 0x1301
+    int     $0x10        #使用这个中断0x10时，输出所得的，因而要设置好 ES 和 BP
 
-loop_forever:           #一直循环
+loop_forever:            #一直循环
     jmp loop_forever
 
 sectors:
     .word 0
 
 msg1:
-    .byte 13,10         #13是回车，10是换行
+    .byte 13,10          #13是回车，10是换行
     .ascii "The program is working."
     .byte 13,10,13,10
 
-    .=0x1fe             #对齐语法，等价于.org 510，表示在该处补0，即第一扇区的最后两字节
+    .=0x1fe              #对齐语法，等价于.org 510，表示在该处补0，即第一扇区的最后两字节
 
 #在此填充魔术值，BIOS会识别硬盘中第一扇区，以0xaa55结尾的为启动扇区，于是BIOS会装载
 
