@@ -83,4 +83,37 @@ void calc_mem(void)
     return;
 }
 
-//获取第一个空闲的内存物理页。
+//获取第一个空闲的内存物理页，该函数从mem_map末尾开始遍历，直到遇到某个物理页
+//映像为没有被占用的状态，这时计算出该页的物理地址
+//初始化该页内容为0，并返回页起始地址；若不存在可用页返回0
+unsigned long get_free_page(void)
+{
+    register unsigned long __res asm("ax");
+    __asm__ volatile("std; repne; scasb\n\t"
+                     "jne 1f\n\t"
+                     "movb $1, 1(%%edi)\n\t"
+                     "sall $12, %%ecx\n\t"
+                     "addl %2, %%ecx\n\t"
+                     "movl %%ecx, %%edx\n\t"
+                     "movl $1024, %%ecx\n\t"
+                     "leal 4092(%%edx), %%edi\n\t"
+                     "rep; stosl;\n\t"
+                     "movl %%edx, %%eax\n"
+                     "1: cld"
+                     : "=a"(__res)
+                     : "0"(0), "i"(LOW_MEM), "c"(PAGING_PAGES), "D"(mem_map + PAGING_PAGES - 1)); // 从尾端开始检查是否有可用的物理页
+    return __res;
+}
+
+//释放一页物理页
+//将mem_map中相应的byte置0，以及一些必要的错误检查
+//包括是否访问了内核内存，或是否超出物理内存(16MB)边界
+void free_page(unsigned long addr)
+{
+    if (addr < LOW_MEM)
+        return; //决不允许操作物理内存低端
+    if (addr >= HIGH_MEMORY)
+        return; //不可超出可用内存高端
+
+    addr =
+}
