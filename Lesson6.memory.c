@@ -168,6 +168,48 @@ int free_page_tables(unsigned long from, unsigned long size)
 //参数 page 为页面的物理地址，address为线性地址
 unsigned long put_page(unsigned long page, unsigned long address)
 {
-    unsigned long *pg_tbl,tmp;
-    if(page<LOW_MEM||)
+    unsigned long *pg_tbl, tmp;
+    if (page < LOW_MEM || page >= HIGH_MEMORY)
+        printk("Trying to put page %x at %x\n", page, address);
+
+    if (mem_map[MAP_NR(page)] != 1)
+        printk("mem_map disagrees with %x at %x\n", page, address);
+
+    //计算该线性地址对应的页目录地址
+    pg_tbl = (unsigned)((address >> 20) & 0xffc);
+    //如果页目录存在则直接取出pg_tbl
+    printk("Params: pg_tbl = %x, entry = %x\n", pg_tbl, (address >> 12) & 0x3ff);
+    if (*pg_tbl & 1)
+    {
+        printk("Page table now available\n");
+        pg_tbl = (unsigned long)(*pg_tbl & 0xfffff000);
+    }
+    //否则申请物理页放置页目录
+    else
+    {
+        if (!(tmp = get_free_page()))
+        {
+            printk("NO FREE PAGE!");
+            return 0;
+        }
+        *pg_tbl = tmp | 7;
+        printk("Tmp = %x\n", tmp);
+        printk("Page Table = %x\n", *pg_tbl);
+        pg_tbl = (unsigned long *)tmp;
+    }
+    printk("Put Page Success\n");
+    pg_tbl[(address >> 12) & 0x3ff] = page | 7;
+    return page;
+}
+
+//为线性地址 address 申请一个空物理页，失败则返回异常
+void get_empty_page(unsigned long address)
+{
+    unsigned long tmp;
+    if (!(tmp = get_free_page()) || !put_page(tmp, address))
+    {
+        free_page(tmp);
+        oom();
+    }
+    return;
 }
