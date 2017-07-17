@@ -213,3 +213,73 @@ void get_empty_page(unsigned long address)
     }
     return;
 }
+
+//验证目前要操作的页面（线性地址）是否合法以及可以被写入
+//若页面存在但是不可写入，则会尝试解除页面保护(un_wp_page)
+void write_verify(unsigned long address)
+{
+    unsigned long page;
+    //检查页目录项是否存在
+    if (!((page = *((unsigned long *)((address >> 20) & 0xffc))) & 1))
+        return;
+    //取页表首地址
+    page = page & 0xfffff000;
+    page += ((address >> 10) & 0xffc);
+    if (*(unsigned long *)page & 3 == 1)
+    { //页表P = 1, R/W = 0
+        un_wp_page((unsigned long *)page);
+    }
+    return;
+}
+
+//解除页面的写入保护write protection
+//若页面在1MB以上空间且页面存在，则在FLAG上添加W FLAG并刷新TLB，否则申请
+//一个新的页面并复制老页面的内容到新页面Copy on Write
+void un_wp_page(unsigned long *table_entry)
+{
+    unsigned long old_page, new_page;
+    old_page = *table_entry & 0xfffff000;
+    //页面存在且位于1MB以上
+    if (old_page >= LOW_MEM && mem_map[MAP_NR(old_page)] == 1)
+    {
+        *table_entry |= 2;
+        invalidate();
+        return;
+    }
+    //尝试分配新页面，若失败oom
+    if (!(new_page = get_free_page())
+        oom();
+    //页面被共享，因为进行写时复制(COW)之后该页面就变为独立页面，引用次数 -1
+    if (old_page >= LOW_MEM)
+        mem_map[MAP_NR(old_page)]--;
+    *table_entry = new_page | 7;
+    invalidate();
+    return;
+}
+
+//缺页异常时调用
+void do_wp_page(unsigned long error_code, unsigned long address)
+{
+    un_wp_page((unsigned long *)(((address >> 10) & 0xffc) +
+                                     ((*(unsigned long *)((address >> 20) & 0xffc))) &
+                                 0xfffff000));
+}
+
+//缺页异常调用此函数
+//缺页异常会调用的主要处理函数,(有进程管理相关代码, 暂时略),如果当前进程executable是空
+//或者地址已超出进程数据，则尝试取一个空页面并返回,
+//如果失败则尝试共享页面，如果仍然失败，则尝试取一个新的页面(不在内存中的)，再失败则报错OOM
+//参数 error_code, 错误号; address 线性地址
+void do_no_page(unsigned long error_code, unsigned long address)
+{
+    unsigned long tmp;
+    unsigned long page;
+
+    address &= 0xfffff000;
+    if (!(page = get_free_page()))
+        oom();
+    if (put_page(page, address))
+        return;
+    free_page(page);
+    oom();
+}
