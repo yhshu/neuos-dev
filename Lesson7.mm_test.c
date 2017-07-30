@@ -24,17 +24,17 @@ void test_put_page()
     return;
 }
 
-//将线性地址转换为PTE
+//将线性地址转换为页表项(Page Table Entry)
 //若成功返回物理地址，若失败返回NULL
 unsigned long *linear_to_pte(unsigned long addr)
 {
-    //首先获取页目录表，后面会被用于引用pde
+    //首先获取页目录表，后面会被用于查找页目录索引(Page Directory Entry)
     unsigned long *pde = (unsigned long *)((addr >> 20) & 0xffc);
     if (!(*pde & 1) || pde > 0x1000) //页目录表不存在或地址不在页表范围内
     {
         return 0;
     }
-    //页表地址 + 页表索引 = PTE
+    //页表地址 + 页表索引 = 页表项PTE
     pde = (unsigned long *)(*pde & 0xfffff000);
     return pde + ((addr >> 12) & 0x3ff);
 }
@@ -48,6 +48,7 @@ void disable_linear(unsigned long addr)
     return;
 }
 
+//只读
 void mm_read_only(unsigned long addr)
 {
     unsigned long *pte = linear_to_pte(addr);
@@ -58,6 +59,7 @@ void mm_read_only(unsigned long addr)
     return;
 }
 
+//显示页的信息
 void mm_print_pageinfo(unsigned long addr)
 {
     unsigned long *pte = linear_to_pte(addr);
@@ -73,7 +75,7 @@ void mm_print_pageinfo(unsigned long addr)
     else
         printk("S ");
     printk("]\n");
-    printk("Phyaddr = %x\n", (*pte & 0xfffff000));
+    printk("Physical address = %x\n", (*pte & 0xfffff000));
 }
 
 int mmtest_main(void)
