@@ -19,15 +19,15 @@ static union task_union init_task = {
     INIT_TASK,
 }; //定义初始任务的数据
 
+long user_stack[PAGE_SIZE >> 2];
+long startup_time;                               //开机时间，从1970年1月1日0:00开始计时的秒数。
+struct task_struct *current = &(init_task.task); //当前任务指针（初始化指向任务0）
+
 //定义用户堆栈，共1K项，容量4K字节。在内核态初始化操作过程中被用作内核栈，初始化
 //完成后被用作任务0的用户态堆栈。在运行任务0之前它是内核栈，以后用作任务0和1的用户态
 //栈。下面结构用于设置堆栈ss:esp（数据段选择符：指针），见head.s.
 //ss被设置为内核数据段选择符(0x10)，指针esp指在user_stack数组最后一项后面。这是
 //因为Intel CPU执行堆栈操作时先递减堆栈指针sp值，然后在sp指针处保存入栈内容。
-
-long user_stack[PAGE_SIZE >> 2];
-long startup_time;                               //开机时间，从1970年1月1日0:00开始计时的秒数。
-struct task_struct *current = &(init_task.task); //当前任务指针（初始化指向任务0）
 
 struct
 {
