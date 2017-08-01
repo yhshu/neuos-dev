@@ -8,18 +8,19 @@
     ljmp $BOOTSEG,$_start #修改cs寄存器为BOOTSEG，并跳转到_start处执行代码
 
 _start:
-    mov $BOOTSEG, %ax    #ax = BOOTSEG
+    #int 10，ah = 03     功能：获取光标位置和形状
+    mov $BOOTSEG, %ax    #ax = BOOTSEG 通过 ax 设置 es
     mov %ax, %es         #设置ES寄存器，为输出字符串作准备
-    mov $0x03, %ah       #int 10，ah = 03H 执行的功能是获取光标位置和形状
-                         #在输出信息前读取光标位置储存在DX里，中断返回的DH为行，DL为列
+    mov $0x03, %ah       #功能号 03
+                         #在输出信息前读取光标位置，返回的DH为行，DL为列
     xor %bh, %bh         #bh为显示页码，设为0
     int $0x10
 
     mov     $20,%cx      #设定输出长度 cx = 20
-    mov     $0x0007, %bx #bx是显示页面；page 0, attribute 7 (normal) 设置必要的属性
+    mov     $0x0007, %bx #bx是显示页面；bh是page 0, bl是attribute 7 (normal) 设置必要的属性
     #lea    msg1, %bp    #lea是取地址指令，bp是指针寄存器
     mov     $msg1, %bp   
-    mov     $0x1301, %ax #写字符，移动光标 ax = 0x1301
+    mov     $0x1301, %ax #写字符，移动光标 ax
     int     $0x10        #使用这个中断0x10时，输出所得的，因而要设置好 ES 和 BP
 
 loop_forever:            #一直循环
@@ -29,7 +30,7 @@ sectors:
     .word 0
 
 msg1:
-    .byte 13,10          #13是回车，10是换行
+    .byte 13,10          # ascii码13是回车，ascii码10是换行
     .ascii "The program is working."
     .byte 13,10,13,10
 
