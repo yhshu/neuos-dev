@@ -17,7 +17,7 @@ _start:
     int $0x10
 
     mov     $20,%cx      #设定输出长度 cx = 20
-    mov     $0x0007, %bx #bx是显示页面；bh是page 0, bl是attribute 7 (normal) 设置必要的属性
+    mov     $0x0007, %bx #设置属性，bx是显示页面；bh是page 0, bl是attribute 7 (normal)，即亮白色
     #lea    msg1, %bp    #lea是取地址指令，bp是指针寄存器
     mov     $msg1, %bp   
     mov     $0x1301, %ax #写字符，移动光标 ax
