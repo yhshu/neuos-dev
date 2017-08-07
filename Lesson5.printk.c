@@ -204,7 +204,7 @@ void roll_screen()  //putchar过程中的滚屏
 {
     int i;
     //将下一行复制到这一行
-    for(i = 1;i < VIDEO_X_SZ; i++)
+    for(i = 1;i < VIDEO_Y_SZ; i++)
     {
         memcpy(video_buffer + (i - 1) * 80 * 2, video_buffer + i * 80 * 2, VIDEO_X_SZ, 2 * sizeof(char));
     }
