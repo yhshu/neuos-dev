@@ -65,7 +65,7 @@ typedef unsigned int sigset_t;//32位信号集，一位表示一个信号
 //sa_restorer 是恢复函数指针，由函数库Libc提供，用于清理用户态堆栈。
 //引起触发信号处理的信号也将被阻塞，除非使用了SA_NOMASK标志。
 struct sigaction {
-    void (*sa_handler)(int);
+    void (*sa_handler)(int); //函数指针；C语言结构体不能定义函数
 
     sigset_t sa_mask;
     int sa_flags;
